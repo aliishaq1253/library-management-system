@@ -1,5 +1,6 @@
 package com.ali.library_management_system.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -34,6 +35,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BookNotAvailableException.class)
     public ResponseEntity<Map<String, Object>> handleBookNotAvailable(BookNotAvailableException ex) {
         return buildErrorResponse(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    // 409 - a database constraint was violated; the only foreign key is loans.book_id,
+    // so in practice this means deleting a book that is still referenced by a loan.
+    // Return a readable message instead of leaking the raw SQL error to the client.
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        return buildErrorResponse(HttpStatus.CONFLICT,
+                "Cannot delete this book because it has loan records.");
     }
 
     // 400 - @Valid on a request body failed (e.g. title/author/isbn missing)
